@@ -723,10 +723,16 @@ Include both classical and modern interdisciplinary fields.`;
             },
 
             async callGenerationAPI(prompt, config) {
+                // CORS Proxy support for browser-based API calls
+                const corsProxies = [
+                    "https://corsproxy.io/?",
+                    "https://api.allorigins.win/get?url=",
+                    "https://cors-anywhere.herokuapp.com/"
+                ];
                 const messages = [{ role: 'user', content: prompt }];
 
                 if (config.provider === 'kimi') {
-                    const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+                    const response = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://api.moonshot.cn/v1/chat/completions'), {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -739,7 +745,7 @@ Include both classical and modern interdisciplinary fields.`;
                         })
                     });
 
-                    if (!response.ok) throw new Error('Kimi API error');
+                    if (!response.ok) throw new Error('Kimi API Error: ' + response.status);
                     const data = await response.json();
                     return this.parseJSONResponse(data.choices[0].message.content);
                 } else if (config.provider === 'openai') {
@@ -985,10 +991,15 @@ Return as a simple list, one entry per line. Use markdown italics for titles.`;
                     </div>
 
                     <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
-                        <h4 style="margin-bottom: 0.5rem;">💡 Tip: Use Ollama for Free</h4>
+                        <h4 style="margin-bottom: 0.5rem; color: #f59e0b;">⚠️ CORS Issue with Kimi/OpenAI</h4>
+                        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">
+                            Browsers block direct API calls for security. Kimi may fail due to CORS restrictions.
+                        </p>
+                        <h4 style="margin-bottom: 0.5rem; color: #10b981;">✅ Recommended: Use Ollama (100% Free)</h4>
                         <p style="color: var(--text-muted); font-size: 0.9rem;">
-                            Ollama lets you run AI models locally on your computer for free.
-                            Install Ollama, run <code>ollama run llama2</code>, then select Ollama above.
+                            1. Install Ollama from <a href="https://ollama.ai" target="_blank" style="color: var(--primary);">ollama.ai</a><br>
+                            2. Run: <code>ollama run llama3.2</code> (or llama2)<br>
+                            3. Select Ollama above → Test Connection → Start Generating!
                         </p>
                     </div>
                 `;
