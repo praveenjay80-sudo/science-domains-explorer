@@ -383,13 +383,10 @@
             },
 
             render() {
-                console.log('Rendering... Domain:', this.currentDomain, 'Field:', this.currentField, 'Subfield:', this.currentSubfield);
                 const data = this.getCurrentData();
                 console.log('Current data items:', data.items.length, data.items);
-                this.renderTabs();
-                this.renderBreadcrumb();
 
-                const data = this.getCurrentData();
+                // duplicate removed
                 const container = document.getElementById('content');
                 const actionBar = document.getElementById('actionBar');
 
