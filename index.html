@@ -187,6 +187,7 @@
             <button class="btn btn-primary" onclick="app.generateMissing()">🔄 Generate Missing</button>
             <button class="btn btn-warning" onclick="app.generateAll()">⚡ Generate All Items</button>
             <button class="btn btn-accent" onclick="app.generateNewItem()">➕ Generate New Item</button>
+            <button class="btn btn-secondary" onclick="app.forceRefresh()">🔄 Refresh View</button>
             <span class="progress-info" id="progressInfo"></span>
         </div>
 
@@ -228,6 +229,9 @@
             bibliographies: JSON.parse(localStorage.getItem('scienceBibliographies') || '{}'),
 
             init() {
+                console.log('App initializing...');
+                console.log('Stored data:', this.data);
+
                 // Initialize domains if not present
                 if (!this.data.domains) {
                     this.data.domains = {};
@@ -312,6 +316,7 @@
             },
 
             getCurrentData() {
+                console.log('Getting data for domain:', this.currentDomain);
                 if (this.searchQuery) {
                     return this.searchAll();
                 }
@@ -378,6 +383,9 @@
             },
 
             render() {
+                console.log('Rendering... Domain:', this.currentDomain, 'Field:', this.currentField, 'Subfield:', this.currentSubfield);
+                const data = this.getCurrentData();
+                console.log('Current data items:', data.items.length, data.items);
                 this.renderTabs();
                 this.renderBreadcrumb();
 
@@ -784,6 +792,15 @@ Include both classical and modern interdisciplinary fields.`;
                 throw new Error('Unknown provider');
             },
 
+            forceRefresh() {
+                console.log('Force refreshing...');
+                console.log('Current data:', this.data);
+                this.saveData();
+                this.updateStats();
+                this.render();
+                this.showNotification('View refreshed!');
+            }
+
             parseJSONResponse(text) {
                 // Extract JSON from markdown code blocks or plain text
                 const jsonMatch = text.match(/```json\n?([\s\S]*?)\n?```/) ||
@@ -831,6 +848,12 @@ Include both classical and modern interdisciplinary fields.`;
                 }
 
                 this.saveData();
+
+                // Force update after adding items
+                setTimeout(() => {
+                    this.updateStats();
+                    this.render();
+                }, 50);
             },
 
             // ============ BIBLIOGRAPHY FUNCTIONS ============
