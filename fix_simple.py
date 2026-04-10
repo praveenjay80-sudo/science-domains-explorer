@@ -1,4 +1,5 @@
-<!DOCTYPE html>
+#!/usr/bin/env python3
+html_content = '''<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -128,4 +129,9 @@
         window.onload = () => app.init();
     </script>
 </body>
-</html>
+</html>'''
+
+with open('index.html', 'w', encoding='utf-8') as f:
+    f.write(html_content)
+
+print('Created fresh index.html')
