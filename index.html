@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Science Domains Explorer - AI-Powered Research Tool</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #2563eb; --primary-dark: #1d4ed8; --secondary: #7c3aed;
+            --accent: #059669; --bg: #0f172a; --surface: #1e293b;
+            --surface-light: #334155; --text: #f8fafc; --text-muted: #94a3b8;
+            --border: #475569; --formal: #3b82f6; --natural: #10b981; --social: #f59e0b;
+            --generating: #f97316;
+        }
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg); color: var(--text); min-height: 100vh; line-height: 1.6;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--surface) 0%, var(--surface-light) 100%);
+            padding: 1.5rem 2rem; border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
+        }
+        .header-content { max-width: 1600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 {
+            font-size: 1.75rem;
+            background: linear-gradient(90deg, var(--formal), var(--natural), var(--social));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .header p { color: var(--text-muted); font-size: 0.9rem; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 2rem; }
+        .btn {
+            padding: 0.6rem 1.2rem; border-radius: 8px; border: none;
+            cursor: pointer; font-size: 0.9rem; font-weight: 600;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--surface-light); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary:hover { background: var(--border); }
+        .btn-accent { background: var(--accent); color: white; }
+        .btn-accent:hover { background: #047857; }
+        .btn-warning { background: var(--generating); color: white; }
+        .btn-warning:hover { background: #ea580c; }
+        .domain-tabs { display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .domain-tab {
+            padding: 1rem 2rem; border-radius: 12px; cursor: pointer;
+            transition: all 0.3s; border: 2px solid transparent; font-weight: 600;
+            display: flex; align-items: center; gap: 0.5rem;
+        }
+        .domain-tab.formal { background: rgba(59, 130, 246, 0.1); border-color: var(--formal); color: var(--formal); }
+        .domain-tab.natural { background: rgba(16, 185, 129, 0.1); border-color: var(--natural); color: var(--natural); }
+        .domain-tab.social { background: rgba(245, 158, 11, 0.1); border-color: var(--social); color: var(--social); }
+        .domain-tab:hover, .domain-tab.active { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.3); color: white; }
+        .domain-tab.formal:hover, .domain-tab.formal.active { background: var(--formal); }
+        .domain-tab.natural:hover, .domain-tab.natural.active { background: var(--natural); }
+        .domain-tab.social:hover, .domain-tab.social.active { background: var(--social); }
+        .search-bar {
+            width: 100%; padding: 1rem 1.5rem; font-size: 1rem;
+            border: 1px solid var(--border); border-radius: 12px;
+            background: var(--surface); color: var(--text); margin-bottom: 1.5rem;
+        }
+        .search-bar:focus { outline: none; border-color: var(--primary); }
+        .breadcrumb { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .breadcrumb-item { padding: 0.5rem 1rem; background: var(--surface); border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 0.9rem; }
+        .breadcrumb-item:hover { background: var(--surface-light); }
+        .breadcrumb-separator { color: var(--text-muted); }
+        .action-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+        .progress-info { color: var(--text-muted); font-size: 0.9rem; margin-left: auto; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.5rem; }
+        .card {
+            background: var(--surface); border-radius: 16px; padding: 1.5rem;
+            border: 1px solid var(--border); transition: all 0.3s;
+            position: relative; overflow: hidden;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0; transition: opacity 0.3s;
+        }
+        .card:hover { transform: translateY(-4px); border-color: var(--primary); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .card:hover::before { opacity: 1; }
+        .card.generating { border-color: var(--generating); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+        .card-title { font-size: 1.2rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
+        .card-type {
+            font-size: 0.7rem; text-transform: uppercase; padding: 0.25rem 0.75rem;
+            border-radius: 20px; font-weight: 600;
+        }
+        .card-type.domain { background: rgba(124, 58, 237, 0.2); color: #a78bfa; }
+        .card-type.field { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .card-type.subfield { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .card-type.concept { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .card-description { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem; line-height: 1.5; }
+        .card-meta { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; }
+        .card-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .card-actions .btn { font-size: 0.8rem; padding: 0.4rem 0.8rem; }
+        .stats { display: flex; gap: 1.5rem; margin-bottom: 2rem; flex-wrap: wrap; }
+        .stat { background: var(--surface); padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid var(--border); }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
+        .stat-label { color: var(--text-muted); font-size: 0.85rem; }
+        .empty-state { text-align: center; padding: 4rem 2rem; color: var(--text-muted); }
+        .empty-state-icon { font-size: 4rem; margin-bottom: 1rem; }
+        .loading { display: inline-flex; align-items: center; gap: 0.5rem; }
+        .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal { background: var(--surface); border-radius: 20px; max-width: 900px; width: 90%; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; transform: scale(0.9); transition: transform 0.3s; }
+        .modal-overlay.active .modal { transform: scale(1); }
+        .modal-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; }
+        .modal-title { font-size: 1.5rem; margin-bottom: 0.25rem; }
+        .modal-subtitle { color: var(--text-muted); font-size: 0.9rem; }
+        .modal-close { background: none; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; }
+        .modal-close:hover { color: var(--text); }
+        .modal-body { padding: 1.5rem 2rem; overflow-y: auto; flex: 1; }
+        .bibliography-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border); }
+        .bib-item { background: var(--bg); padding: 1rem; border-radius: 8px; margin-bottom: 0.75rem; border-left: 3px solid var(--accent); font-size: 0.9rem; }
+        .notification { position: fixed; bottom: 2rem; right: 2rem; background: var(--accent); color: white; padding: 1rem 1.5rem; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); z-index: 2000; animation: slideIn 0.3s ease; max-width: 400px; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .generation-queue { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; }
+        .queue-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .queue-status { color: var(--text-muted); font-size: 0.85rem; }
+        .progress-bar { height: 6px; background: var(--surface-light); border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--secondary)); border-radius: 3px; transition: width 0.3s ease; }
+        textarea { width: 100%; padding: 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-family: inherit; resize: vertical; }
+        select { width: 100%; padding: 0.75rem; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); }
+        label { display: block; margin-bottom: 0.5rem; color: var(--text-muted); font-size: 0.9rem; }
+        .form-group { margin-bottom: 1rem; }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+            .header-content { flex-direction: column; gap: 1rem; text-align: center; }
+            .domain-tab { padding: 0.75rem 1.25rem; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>Science Domains Explorer</h1>
+                <p>AI-powered research tool - All content generated dynamically via API</p>
+            </div>
+            <button class="btn btn-secondary" onclick="app.showSettings()">⚙️ Settings</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="stats" id="stats">
+            <div class="stat"><div class="stat-value" id="totalFields">0</div><div class="stat-label">Fields</div></div>
+            <div class="stat"><div class="stat-value" id="totalSubfields">0</div><div class="stat-label">Subfields</div></div>
+            <div class="stat"><div class="stat-value" id="totalConcepts">0</div><div class="stat-label">Concepts</div></div>
+        </div>
+
+        <div class="domain-tabs">
+            <div class="domain-tab formal active" data-domain="formal" onclick="app.selectDomain('formal')">
+                <span>📐</span> Formal Sciences
+            </div>
+            <div class="domain-tab natural" data-domain="natural" onclick="app.selectDomain('natural')">
+                <span>🔬</span> Natural Sciences
+            </div>
+            <div class="domain-tab social" data-domain="social" onclick="app.selectDomain('social')">
+                <span>👥</span> Social Sciences
+            </div>
+        </div>
+
+        <input type="text" class="search-bar" id="searchBar" placeholder="Search or generate new content...">
+
+        <div class="generation-queue" id="queuePanel" style="display: none;">
+            <div class="queue-header">
+                <span id="queueTitle">Generating...</span>
+                <button class="btn btn-secondary" onclick="app.stopGeneration()">Stop</button>
+            </div>
+            <div class="queue-status" id="queueStatus">0 of 0 items</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="queueProgress" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="breadcrumb" id="breadcrumb">
+            <div class="breadcrumb-item" onclick="app.goHome()">Home</div>
+        </div>
+
+        <div class="action-bar" id="actionBar">
+            <button class="btn btn-primary" onclick="app.generateMissing()">🔄 Generate Missing</button>
+            <button class="btn btn-warning" onclick="app.generateAll()">⚡ Generate All Items</button>
+            <button class="btn btn-accent" onclick="app.generateNewItem()">➕ Generate New Item</button>
+            <span class="progress-info" id="progressInfo"></span>
+        </div>
+
+        <div class="grid" id="content"></div>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal">
+            <div class="modal-header">
+                <div>
+                    <h2 class="modal-title" id="modalTitle">Title</h2>
+                    <p class="modal-subtitle" id="modalSubtitle">Type</p>
+                </div>
+                <button class="modal-close" onclick="app.closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initial seed data - minimal structure
+        const seedDomains = {
+            formal: { name: "Formal Sciences", description: "Disciplines concerned with formal systems, abstract structures, and symbolic reasoning", icon: "📐" },
+            natural: { name: "Natural Sciences", description: "Branches of science that seek to explain natural phenomena through observation and experimentation", icon: "🔬" },
+            social: { name: "Social Sciences", description: "Disciplines concerned with society, human behavior, and social relationships", icon: "👥" }
+        };
+
+        const app = {
+            currentDomain: 'formal',
+            currentField: null,
+            currentSubfield: null,
+            searchQuery: '',
+            isGenerating: false,
+            generationQueue: [],
+            generationStats: { completed: 0, total: 0 },
+
+            // Data store (loaded from localStorage or empty)
+            data: JSON.parse(localStorage.getItem('scienceData') || '{}'),
+            bibliographies: JSON.parse(localStorage.getItem('scienceBibliographies') || '{}'),
+
+            init() {
+                // Initialize domains if not present
+                if (!this.data.domains) {
+                    this.data.domains = {};
+                    Object.keys(seedDomains).forEach(key => {
+                        this.data.domains[key] = { ...seedDomains[key], fields: [], generated: false };
+                    });
+                    this.saveData();
+                }
+
+                this.updateStats();
+                this.render();
+                this.setupEventListeners();
+            },
+
+            saveData() {
+                localStorage.setItem('scienceData', JSON.stringify(this.data));
+            },
+
+            getAPIConfig() {
+                return JSON.parse(localStorage.getItem('apiConfig') || '{"provider":"mock","model":"moonshot-v1-8k"}');
+            },
+
+            saveAPIConfig(config) {
+                localStorage.setItem('apiConfig', JSON.stringify(config));
+            },
+
+            updateStats() {
+                let fields = 0, subfields = 0, concepts = 0;
+
+                Object.values(this.data.domains || {}).forEach(domain => {
+                    fields += domain.fields?.length || 0;
+                    domain.fields?.forEach(field => {
+                        subfields += field.subfields?.length || 0;
+                        field.subfields?.forEach(sub => {
+                            concepts += sub.concepts?.length || 0;
+                        });
+                    });
+                });
+
+                document.getElementById('totalFields').textContent = fields;
+                document.getElementById('totalSubfields').textContent = subfields;
+                document.getElementById('totalConcepts').textContent = concepts;
+            },
+
+            setupEventListeners() {
+                document.getElementById('searchBar').addEventListener('input', (e) => {
+                    this.searchQuery = e.target.value.toLowerCase();
+                    this.render();
+                });
+            },
+
+            selectDomain(domain) {
+                this.currentDomain = domain;
+                this.currentField = null;
+                this.currentSubfield = null;
+                this.searchQuery = '';
+                document.getElementById('searchBar').value = '';
+                this.render();
+            },
+
+            selectField(fieldId) {
+                this.currentField = fieldId;
+                this.currentSubfield = null;
+                this.searchQuery = '';
+                document.getElementById('searchBar').value = '';
+                this.render();
+            },
+
+            selectSubfield(subfieldId) {
+                this.currentSubfield = subfieldId;
+                this.searchQuery = '';
+                document.getElementById('searchBar').value = '';
+                this.render();
+            },
+
+            goHome() {
+                this.currentField = null;
+                this.currentSubfield = null;
+                this.searchQuery = '';
+                document.getElementById('searchBar').value = '';
+                this.render();
+            },
+
+            getCurrentData() {
+                if (this.searchQuery) {
+                    return this.searchAll();
+                }
+
+                const domain = this.data.domains[this.currentDomain];
+
+                if (this.currentSubfield) {
+                    const field = domain.fields.find(f => f.id === this.currentField);
+                    const subfield = field?.subfields?.find(s => s.id === this.currentSubfield);
+                    return {
+                        type: 'concepts',
+                        items: subfield?.concepts?.map(c => ({ name: c, type: 'concept' })) || [],
+                        parent: subfield
+                    };
+                }
+
+                if (this.currentField) {
+                    const field = domain.fields.find(f => f.id === this.currentField);
+                    return {
+                        type: 'subfields',
+                        items: field?.subfields || [],
+                        parent: field
+                    };
+                }
+
+                return {
+                    type: 'fields',
+                    items: domain?.fields || [],
+                    parent: domain
+                };
+            },
+
+            searchAll() {
+                const results = [];
+
+                Object.entries(this.data.domains || {}).forEach(([domainKey, domain]) => {
+                    // Check domain
+                    if (domain.name.toLowerCase().includes(this.searchQuery)) {
+                        results.push({ ...domain, type: 'domain', id: domainKey });
+                    }
+
+                    domain.fields?.forEach(field => {
+                        if (field.name.toLowerCase().includes(this.searchQuery) ||
+                            field.description?.toLowerCase().includes(this.searchQuery)) {
+                            results.push({ ...field, type: 'field', domain: domainKey });
+                        }
+
+                        field.subfields?.forEach(subfield => {
+                            if (subfield.name.toLowerCase().includes(this.searchQuery) ||
+                                subfield.description?.toLowerCase().includes(this.searchQuery)) {
+                                results.push({ ...subfield, type: 'subfield', domain: domainKey, fieldId: field.id });
+                            }
+
+                            subfield.concepts?.forEach(concept => {
+                                if (concept.toLowerCase().includes(this.searchQuery)) {
+                                    results.push({ name: concept, type: 'concept', domain: domainKey, fieldId: field.id, subfieldId: subfield.id });
+                                }
+                            });
+                        });
+                    });
+                });
+
+                return { type: 'search', items: results };
+            },
+
+            render() {
+                this.renderTabs();
+                this.renderBreadcrumb();
+
+                const data = this.getCurrentData();
+                const container = document.getElementById('content');
+                const actionBar = document.getElementById('actionBar');
+
+                // Update action bar
+                const totalItems = data.items.length;
+                const generatedItems = data.items.filter(i => i.generated !== false).length;
+                document.getElementById('progressInfo').textContent =
+                    `${generatedItems} of ${totalItems} generated`;
+
+                if (data.items.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📝</div>
+                            <h3>No items yet</h3>
+                            <p>Click "Generate New Item" to create content for this level</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.items.map(item => this.createCard(item, data.type)).join('');
+            },
+
+            createCard(item, type) {
+                const isGenerating = item.generating;
+                const hasChildren = item.subfields?.length > 0 || item.concepts?.length > 0;
+
+                let clickAction = '';
+                if (item.type === 'field' || (type === 'fields' && !item.type)) {
+                    clickAction = `onclick="app.selectField('${item.id}')"`;
+                } else if (item.type === 'subfield' || type === 'subfields') {
+                    clickAction = `onclick="app.selectSubfield('${item.id}')"`;
+                } else if (item.type === 'concept' || type === 'concepts') {
+                    clickAction = `onclick="app.showConceptDetails('${item.name.replace(/'/g, "\\'")}')"`;
+                }
+
+                const cardType = item.type || (type === 'fields' ? 'field' : type === 'subfields' ? 'subfield' : 'concept');
+
+                return `
+                    <div class="card ${isGenerating ? 'generating' : ''}" ${clickAction}>
+                        <div class="card-header">
+                            <div>
+                                <div class="card-type ${cardType}">${cardType}</div>
+                                <div class="card-title">${item.name}</div>
+                            </div>
+                        </div>
+                        ${item.description ? `<div class="card-description">${item.description}</div>` : ''}
+                        ${hasChildren ? `<div class="card-meta">${item.subfields?.length || 0} subfields • ${this.countConcepts(item)} concepts</div>` : ''}
+                        <div class="card-actions">
+                            ${!item.type && type !== 'search' ? `<button class="btn btn-primary">Explore →</button>` : ''}
+                            <button class="btn btn-accent" onclick="event.stopPropagation(); app.generateBibliography('${item.name.replace(/'/g, "\\'")}', '${cardType}')">📚 Bibliography</button>
+                            ${cardType !== 'concept' ? `<button class="btn btn-warning" onclick="event.stopPropagation(); app.expandItem('${item.id || item.name}', '${cardType}')">⚡ Expand</button>` : ''}
+                        </div>
+                    </div>
+                `;
+            },
+
+            countConcepts(item) {
+                if (item.concepts) return item.concepts.length;
+                if (item.subfields) {
+                    return item.subfields.reduce((sum, sub) => sum + (sub.concepts?.length || 0), 0);
+                }
+                return 0;
+            },
+
+            renderBreadcrumb() {
+                const domain = this.data.domains[this.currentDomain];
+                let html = `<div class="breadcrumb-item" onclick="app.goHome()">${domain.name}</div>`;
+
+                if (this.currentField) {
+                    const field = domain.fields.find(f => f.id === this.currentField);
+                    html += `<span class="breadcrumb-separator">›</span>`;
+                    html += `<div class="breadcrumb-item" onclick="app.selectField('${this.currentField}')">${field?.name || 'Unknown'}</div>`;
+                }
+
+                if (this.currentSubfield) {
+                    const field = domain.fields.find(f => f.id === this.currentField);
+                    const subfield = field?.subfields?.find(s => s.id === this.currentSubfield);
+                    html += `<span class="breadcrumb-separator">›</span>`;
+                    html += `<div class="breadcrumb-item">${subfield?.name || 'Unknown'}</div>`;
+                }
+
+                document.getElementById('breadcrumb').innerHTML = html;
+            },
+
+            renderTabs() {
+                document.querySelectorAll('.domain-tab').forEach(tab => {
+                    tab.classList.toggle('active', tab.dataset.domain === this.currentDomain);
+                });
+            },
+
+            // ============ GENERATION FUNCTIONS ============
+
+            async generateNewItem() {
+                const config = this.getAPIConfig();
+                if (config.provider === 'mock') {
+                    this.showNotification('Please configure an API in Settings first');
+                    this.showSettings();
+                    return;
+                }
+
+                const domain = this.data.domains[this.currentDomain];
+
+                let prompt, parentInfo = '';
+                if (this.currentSubfield) {
+                    // Generate concepts
+                    const field = domain.fields.find(f => f.id === this.currentField);
+                    const subfield = field.subfields.find(s => s.id === this.currentSubfield);
+                    parentInfo = `subfield "${subfield.name}" in field "${field.name}" of ${domain.name}`;
+                    prompt = `Generate 8-10 specific concepts or topics within the ${parentInfo}. These should be concrete, researchable topics that students or researchers would study.
+
+Return ONLY a JSON array of objects with format: [{"name": "Concept Name", "description": "Brief 1-sentence description"}]
+
+Make them diverse, covering different aspects and applications. Include both foundational and advanced topics.`;
+                } else if (this.currentField) {
+                    // Generate subfields
+                    const field = domain.fields.find(f => f.id === this.currentField);
+                    parentInfo = `field "${field.name}" in ${domain.name}`;
+                    prompt = `Generate 6-8 major subfields or branches within ${parentInfo}. These should be distinct areas of study with their own methodologies and research traditions.
+
+Return ONLY a JSON array of objects with format: [{"name": "Subfield Name", "description": "Brief 2-3 sentence description of what this subfield studies"}]
+
+Ensure they represent genuine academic divisions with substantial literature.`;
+                } else {
+                    // Generate fields
+                    parentInfo = domain.name;
+                    prompt = `Generate 8-10 major fields within ${parentInfo}. These should be well-established disciplines with dedicated departments, journals, and research communities.
+
+Return ONLY a JSON array of objects with format: [{"name": "Field Name", "description": "Brief 2-3 sentence description of this field's scope and methods"}]
+
+Include both classical and modern interdisciplinary fields.`;
+                }
+
+                this.showNotification('Generating new items...');
+
+                try {
+                    const result = await this.callGenerationAPI(prompt, config);
+                    this.addGeneratedItems(result, domain);
+                    this.updateStats();
+                    this.render();
+                    this.showNotification(`Generated ${result.length} new items!`);
+                } catch (error) {
+                    this.showNotification(`Error: ${error.message}`);
+                }
+            },
+
+            async expandItem(itemId, type) {
+                const config = this.getAPIConfig();
+                if (config.provider === 'mock') {
+                    this.showNotification('Please configure an API in Settings');
+                    return;
+                }
+
+                // Build generation queue for this item and all descendants
+                this.generationQueue = [];
+
+                if (type === 'field') {
+                    this.buildFieldExpansionQueue(itemId);
+                } else if (type === 'subfield') {
+                    this.buildSubfieldExpansionQueue(itemId);
+                }
+
+                if (this.generationQueue.length === 0) {
+                    this.showNotification('No items to generate');
+                    return;
+                }
+
+                this.generationStats = { completed: 0, total: this.generationQueue.length };
+                this.isGenerating = true;
+                this.showQueuePanel();
+                this.processGenerationQueue();
+            },
+
+            buildFieldExpansionQueue(fieldId) {
+                const domain = this.data.domains[this.currentDomain];
+                const field = domain.fields.find(f => f.id === fieldId);
+
+                if (!field) return;
+
+                // Add subfield generation if needed
+                if (!field.subfields || field.subfields.length < 6) {
+                    this.generationQueue.push({
+                        type: 'subfields',
+                        fieldId: fieldId,
+                        name: field.name
+                    });
+                }
+
+                // Add concept generation for existing subfields
+                field.subfields?.forEach(subfield => {
+                    if (!subfield.concepts || subfield.concepts.length < 8) {
+                        this.generationQueue.push({
+                            type: 'concepts',
+                            fieldId: fieldId,
+                            subfieldId: subfield.id,
+                            name: subfield.name
+                        });
+                    }
+                });
+            },
+
+            buildSubfieldExpansionQueue(subfieldId) {
+                const domain = this.data.domains[this.currentDomain];
+                const field = domain.fields.find(f => f.id === this.currentField);
+                const subfield = field?.subfields?.find(s => s.id === subfieldId);
+
+                if (!subfield) return;
+
+                if (!subfield.concepts || subfield.concepts.length < 10) {
+                    this.generationQueue.push({
+                        type: 'concepts',
+                        fieldId: this.currentField,
+                        subfieldId: subfieldId,
+                        name: subfield.name
+                    });
+                }
+            },
+
+            async generateAll() {
+                const config = this.getAPIConfig();
+                if (config.provider === 'mock') {
+                    this.showNotification('Please configure an API in Settings');
+                    return;
+                }
+
+                // Build comprehensive queue
+                this.generationQueue = [];
+                const domain = this.data.domains[this.currentDomain];
+
+                if (this.currentSubfield) {
+                    // Generate all concepts for this subfield
+                    this.buildSubfieldExpansionQueue(this.currentSubfield);
+                } else if (this.currentField) {
+                    // Generate all subfields and their concepts
+                    this.buildFieldExpansionQueue(this.currentField);
+                } else {
+                    // Generate all fields, subfields, and concepts for this domain
+                    domain.fields?.forEach(field => {
+                        this.buildFieldExpansionQueue(field.id);
+                    });
+
+                    // Also add field generation if we have few fields
+                    if (!domain.fields || domain.fields.length < 8) {
+                        this.generationQueue.unshift({ type: 'fields', domain: this.currentDomain });
+                    }
+                }
+
+                if (this.generationQueue.length === 0) {
+                    this.showNotification('All items already generated!');
+                    return;
+                }
+
+                this.generationStats = { completed: 0, total: this.generationQueue.length };
+                this.isGenerating = true;
+                this.showQueuePanel();
+                await this.processGenerationQueue();
+            },
+
+            async generateMissing() {
+                // Same as generateAll but only for missing items
+                await this.generateAll();
+            },
+
+            showQueuePanel() {
+                const panel = document.getElementById('queuePanel');
+                panel.style.display = 'block';
+                this.updateQueueDisplay();
+            },
+
+            hideQueuePanel() {
+                document.getElementById('queuePanel').style.display = 'none';
+            },
+
+            updateQueueDisplay() {
+                const { completed, total } = this.generationStats;
+                const remaining = total - completed;
+
+                document.getElementById('queueTitle').textContent =
+                    remaining > 0 ? `Generating ${remaining} items...` : 'Generation complete!';
+                document.getElementById('queueStatus').textContent =
+                    `${completed} of ${total} completed`;
+                document.getElementById('queueProgress').style.width =
+                    total > 0 ? `${(completed / total) * 100}%` : '0%';
+            },
+
+            async processGenerationQueue() {
+                const config = this.getAPIConfig();
+
+                while (this.isGenerating && this.generationQueue.length > 0) {
+                    const task = this.generationQueue[0];
+
+                    try {
+                        await this.executeGenerationTask(task, config);
+                        this.generationQueue.shift();
+                        this.generationStats.completed++;
+                        this.updateQueueDisplay();
+                        this.updateStats();
+                        this.render();
+
+                        // Small delay to prevent rate limiting
+                        await new Promise(r => setTimeout(r, 500));
+                    } catch (error) {
+                        console.error('Generation error:', error);
+                        this.showNotification(`Error generating ${task.name}: ${error.message}`);
+                        this.generationQueue.shift(); // Skip failed item
+                    }
+                }
+
+                this.isGenerating = false;
+                if (this.generationQueue.length === 0) {
+                    setTimeout(() => this.hideQueuePanel(), 2000);
+                    this.showNotification('All items generated successfully!');
+                }
+            },
+
+            stopGeneration() {
+                this.isGenerating = false;
+                this.hideQueuePanel();
+                this.showNotification('Generation stopped');
+            },
+
+            async executeGenerationTask(task, config) {
+                const domain = this.data.domains[this.currentDomain];
+                let prompt;
+
+                if (task.type === 'fields') {
+                    prompt = `Generate 8-10 major fields within ${domain.name}. Return JSON array: [{"name": "...", "description": "..."}]`;
+                } else if (task.type === 'subfields') {
+                    const field = domain.fields.find(f => f.id === task.fieldId);
+                    prompt = `Generate 6-8 subfields within "${field.name}" (${domain.name}). Return JSON array: [{"name": "...", "description": "..."}]`;
+                } else if (task.type === 'concepts') {
+                    const field = domain.fields.find(f => f.id === task.fieldId);
+                    const subfield = field.subfields.find(s => s.id === task.subfieldId);
+                    prompt = `Generate 8-10 concepts within "${subfield.name}" (${field.name}). Return JSON array: [{"name": "...", "description": "..."}]`;
+                }
+
+                const result = await this.callGenerationAPI(prompt, config);
+                this.addGeneratedItems(result, domain, task);
+            },
+
+            async callGenerationAPI(prompt, config) {
+                const messages = [{ role: 'user', content: prompt }];
+
+                if (config.provider === 'kimi') {
+                    const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${config.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: config.model || 'moonshot-v1-8k',
+                            messages: messages,
+                            temperature: 0.7
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Kimi API error');
+                    const data = await response.json();
+                    return this.parseJSONResponse(data.choices[0].message.content);
+                } else if (config.provider === 'openai') {
+                    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${config.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: config.model || 'gpt-3.5-turbo',
+                            messages: messages,
+                            temperature: 0.7
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('OpenAI API error');
+                    const data = await response.json();
+                    return this.parseJSONResponse(data.choices[0].message.content);
+                } else if (config.provider === 'ollama') {
+                    const response = await fetch(`${config.baseUrl}/api/generate`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            model: config.model || 'llama2',
+                            prompt: prompt,
+                            stream: false
+                        })
+                    });
+
+                    if (!response.ok) throw new Error('Ollama error');
+                    const data = await response.json();
+                    return this.parseJSONResponse(data.response);
+                }
+
+                throw new Error('Unknown provider');
+            },
+
+            parseJSONResponse(text) {
+                // Extract JSON from markdown code blocks or plain text
+                const jsonMatch = text.match(/```json\n?([\s\S]*?)\n?```/) ||
+                                 text.match(/```\n?([\s\S]*?)\n?```/) ||
+                                 text.match(/(\[[\s\S]*\])/);
+
+                if (jsonMatch) {
+                    return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+                }
+
+                // Try parsing the whole text
+                return JSON.parse(text);
+            },
+
+            addGeneratedItems(items, domain, task = null) {
+                if (!Array.isArray(items)) return;
+
+                if (task?.type === 'fields' || (!task && !this.currentField)) {
+                    // Add to domain fields
+                    if (!domain.fields) domain.fields = [];
+                    items.forEach(item => {
+                        const id = 'field_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                        domain.fields.push({ id, name: item.name, description: item.description, subfields: [], generated: true });
+                    });
+                } else if (task?.type === 'subfields' || (task?.type === 'subfields' || (this.currentField && !this.currentSubfield))) {
+                    // Add to field subfields
+                    const field = domain.fields.find(f => f.id === (task?.fieldId || this.currentField));
+                    if (field) {
+                        if (!field.subfields) field.subfields = [];
+                        items.forEach(item => {
+                            const id = 'subfield_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                            field.subfields.push({ id, name: item.name, description: item.description, concepts: [], generated: true });
+                        });
+                    }
+                } else {
+                    // Add to subfield concepts
+                    const field = domain.fields.find(f => f.id === (task?.fieldId || this.currentField));
+                    const subfield = field?.subfields?.find(s => s.id === (task?.subfieldId || this.currentSubfield));
+                    if (subfield) {
+                        if (!subfield.concepts) subfield.concepts = [];
+                        items.forEach(item => {
+                            subfield.concepts.push(item.name || item);
+                        });
+                    }
+                }
+
+                this.saveData();
+            },
+
+            // ============ BIBLIOGRAPHY FUNCTIONS ============
+
+            async generateBibliography(topic, type) {
+                const config = this.getAPIConfig();
+
+                this.showNotification(`Generating bibliography for "${topic}"...`);
+
+                let bibliography;
+                if (config.provider === 'mock') {
+                    await new Promise(r => setTimeout(r, 1000));
+                    bibliography = this.createMockBibliography(topic, type);
+                } else {
+                    try {
+                        bibliography = await this.generateRealBibliography(topic, type, config);
+                    } catch (error) {
+                        this.showNotification(`API Error: ${error.message}. Using fallback.`);
+                        bibliography = this.createMockBibliography(topic, type);
+                    }
+                }
+
+                this.bibliographies[topic] = bibliography;
+                localStorage.setItem('scienceBibliographies', JSON.stringify(this.bibliographies));
+
+                this.showBibliographyModal(topic, bibliography);
+            },
+
+            async generateRealBibliography(topic, type, config) {
+                const prompt = `Generate a bibliography of 6 academic references for "${topic}" in ${type}.
+Include a mix of: seminal textbooks, recent review articles, classic papers, and specialized monographs.
+Format in APA style. Include real publishers and realistic years (1990-2024).
+
+Return as a simple list, one entry per line. Use markdown italics for titles.`;
+
+                const response = await this.callGenerationAPI(prompt, config);
+
+                // Handle both array and string responses
+                if (Array.isArray(response)) {
+                    return response.map(r => typeof r === 'string' ? r : r.name || JSON.stringify(r));
+                }
+
+                // Parse string response
+                return response.split('\n').filter(line => line.trim() && !line.toLowerCase().includes('here is'));
+            },
+
+            createMockBibliography(topic, type) {
+                const year = new Date().getFullYear();
+                return [
+                    `Smith, J. (${year - 15}). <em>${topic}: Foundations and Theory</em>. Academic Press.`,
+                    `Johnson, A. B., & Williams, C. (${year - 8}). "Advances in ${topic}: A Comprehensive Review." <em>Journal of ${type} Research</em>, 45(3), 234-256.`,
+                    `Brown, D. (${year - 12}). <em>Handbook of ${topic}</em>. Cambridge University Press.`,
+                    `Davis, E. F., et al. (${year - 5}). "${topic} in Practice: Applications and Case Studies." <em>Annual Review of ${type}</em>, 28, 112-145.`,
+                    `Miller, G. (${year - 20}). <em>Introduction to ${topic}</em>. Oxford University Press.`,
+                    `Wilson, H. I., & Garcia, K. L. (${year - 3}). "Emerging Trends in ${topic}." <em>Proceedings of the International Conference on ${type}</em>, pp. 89-102.`
+                ];
+            },
+
+            showBibliographyModal(topic, bibliography) {
+                const modal = document.getElementById('modal');
+                document.getElementById('modalTitle').textContent = topic;
+                document.getElementById('modalSubtitle').textContent = 'Bibliography';
+
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="bibliography-section">
+                        <h3>📚 References</h3>
+                        ${bibliography.map(bib => `<div class="bib-item">${bib}</div>`).join('')}
+                        <div class="bib-actions">
+                            <button class="btn btn-primary" onclick="app.generateBibliography('${topic.replace(/'/g, "\\'")}', 'topic', true)">Regenerate</button>
+                            <button class="btn btn-secondary" onclick="app.copyBibliography('${topic.replace(/'/g, "\\'")}')">Copy All</button>
+                        </div>
+                    </div>
+                `;
+
+                modal.classList.add('active');
+            },
+
+            showConceptDetails(conceptName) {
+                const modal = document.getElementById('modal');
+                document.getElementById('modalTitle').textContent = conceptName;
+                document.getElementById('modalSubtitle').textContent = 'Concept';
+
+                const cached = this.bibliographies[conceptName];
+
+                document.getElementById('modalBody').innerHTML = `
+                    <p><strong>Concept:</strong> ${conceptName}</p>
+                    <p style="margin-top: 1rem; color: var(--text-muted);">
+                        A specific topic within its field. Generate a bibliography to explore key references.
+                    </p>
+                    <div class="bibliography-section">
+                        <h3>📚 Bibliography</h3>
+                        <div id="bibList">
+                            ${cached ? cached.map(bib => `<div class="bib-item">${bib}</div>`).join('') : '<p style="color: var(--text-muted);">No bibliography generated yet.</p>'}
+                        </div>
+                        <div class="bib-actions">
+                            <button class="btn btn-primary" onclick="app.generateBibliography('${conceptName.replace(/'/g, "\\'")}', 'concept', true)">
+                                ${cached ? 'Regenerate' : 'Generate'} Bibliography
+                            </button>
+                            ${cached ? `<button class="btn btn-secondary" onclick="app.copyBibliography('${conceptName.replace(/'/g, "\\'")}')">Copy All</button>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                modal.classList.add('active');
+            },
+
+            copyBibliography(topic) {
+                const bibliography = this.bibliographies[topic];
+                if (bibliography) {
+                    navigator.clipboard.writeText(bibliography.join('\n\n')).then(() => {
+                        this.showNotification('Bibliography copied to clipboard!');
+                    });
+                }
+            },
+
+            // ============ SETTINGS ============
+
+            showSettings() {
+                const modal = document.getElementById('modal');
+                document.getElementById('modalTitle').textContent = 'API Settings';
+                document.getElementById('modalSubtitle').textContent = 'Configure your AI provider';
+
+                const config = this.getAPIConfig();
+
+                document.getElementById('modalBody').innerHTML = `
+                    <div class="form-group">
+                        <label>API Provider</label>
+                        <select id="apiProvider" onchange="app.toggleProviderFields()">
+                            <option value="mock" ${config.provider === 'mock' ? 'selected' : ''}>Mock Data (No API)</option>
+                            <option value="kimi" ${config.provider === 'kimi' ? 'selected' : ''}>Kimi (Moonshot AI)</option>
+                            <option value="openai" ${config.provider === 'openai' ? 'selected' : ''}>OpenAI</option>
+                            <option value="ollama" ${config.provider === 'ollama' ? 'selected' : ''}>Ollama (Local)</option>
+                        </select>
+                    </div>
+
+                    <div id="apiKeyGroup" class="form-group" style="display: ${config.provider !== 'mock' && config.provider !== 'ollama' ? 'block' : 'none'}">
+                        <label>API Key</label>
+                        <input type="password" id="apiKey" class="search-bar" placeholder="sk-..." value="${config.apiKey || ''}">
+                    </div>
+
+                    <div id="modelGroup" class="form-group" style="display: ${config.provider !== 'mock' ? 'block' : 'none'}">
+                        <label>Model</label>
+                        <input type="text" id="modelName" class="search-bar" placeholder="${config.provider === 'kimi' ? 'moonshot-v1-8k' : config.provider === 'openai' ? 'gpt-3.5-turbo' : 'llama2'}" value="${config.model || ''}">
+                    </div>
+
+                    <div id="ollamaGroup" class="form-group" style="display: ${config.provider === 'ollama' ? 'block' : 'none'}">
+                        <label>Ollama Base URL</label>
+                        <input type="text" id="ollamaUrl" class="search-bar" placeholder="http://localhost:11434" value="${config.baseUrl || 'http://localhost:11434'}">
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.5rem;">
+                            <a href="https://ollama.ai" target="_blank" style="color: var(--primary);">Download Ollama</a> for free local AI
+                        </p>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button class="btn btn-primary" onclick="app.saveSettings()">Save Settings</button>
+                        <button class="btn btn-secondary" onclick="app.testAPIConnection()">Test Connection</button>
+                        <button class="btn btn-secondary" onclick="app.clearAllData()">Clear All Data</button>
+                    </div>
+
+                    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+                        <h4 style="margin-bottom: 0.5rem;">💡 Tip: Use Ollama for Free</h4>
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">
+                            Ollama lets you run AI models locally on your computer for free.
+                            Install Ollama, run <code>ollama run llama2</code>, then select Ollama above.
+                        </p>
+                    </div>
+                `;
+
+                modal.classList.add('active');
+            },
+
+            toggleProviderFields() {
+                const provider = document.getElementById('apiProvider').value;
+                document.getElementById('apiKeyGroup').style.display = provider !== 'mock' && provider !== 'ollama' ? 'block' : 'none';
+                document.getElementById('modelGroup').style.display = provider !== 'mock' ? 'block' : 'none';
+                document.getElementById('ollamaGroup').style.display = provider === 'ollama' ? 'block' : 'none';
+            },
+
+            saveSettings() {
+                const config = {
+                    provider: document.getElementById('apiProvider').value,
+                    apiKey: document.getElementById('apiKey')?.value || '',
+                    model: document.getElementById('modelName')?.value || '',
+                    baseUrl: document.getElementById('ollamaUrl')?.value || 'http://localhost:11434'
+                };
+
+                this.saveAPIConfig(config);
+                this.showNotification('Settings saved!');
+                this.closeModal();
+            },
+
+            async testAPIConnection() {
+                const provider = document.getElementById('apiProvider').value;
+                if (provider === 'mock') {
+                    this.showNotification('Mock mode - no connection needed!');
+                    return;
+                }
+
+                this.showNotification('Testing connection...');
+
+                try {
+                    const config = {
+                        provider: provider,
+                        apiKey: document.getElementById('apiKey')?.value,
+                        model: document.getElementById('modelName')?.value,
+                        baseUrl: document.getElementById('ollamaUrl')?.value
+                    };
+
+                    if (provider === 'ollama') {
+                        const response = await fetch(`${config.baseUrl}/api/tags`);
+                        if (response.ok) {
+                            this.showNotification('✅ Ollama connection successful!');
+                        } else {
+                            throw new Error('Cannot connect to Ollama');
+                        }
+                    } else {
+                        // Test with a simple generation
+                        const result = await this.callGenerationAPI('Say "test" in JSON: ["test"]', config);
+                        if (result) {
+                            this.showNotification('✅ API connection successful!');
+                        }
+                    }
+                } catch (error) {
+                    this.showNotification(`❌ Connection failed: ${error.message}`);
+                }
+            },
+
+            clearAllData() {
+                if (confirm('This will delete ALL generated fields, subfields, and concepts. Are you sure?')) {
+                    this.data = { domains: {} };
+                    Object.keys(seedDomains).forEach(key => {
+                        this.data.domains[key] = { ...seedDomains[key], fields: [], generated: false };
+                    });
+                    this.saveData();
+                    this.updateStats();
+                    this.render();
+                    this.showNotification('All data cleared!');
+                }
+            },
+
+            // ============ UTILITIES ============
+
+            showNotification(message) {
+                const existing = document.querySelector('.notification');
+                if (existing) existing.remove();
+
+                const toast = document.createElement('div');
+                toast.className = 'notification';
+                toast.textContent = message;
+                document.body.appendChild(toast);
+
+                setTimeout(() => toast.remove(), 4000);
+            },
+
+            closeModal() {
+                document.getElementById('modal').classList.remove('active');
+            }
+        };
+
+        // Close modal on outside click
+        document.getElementById('modal').addEventListener('click', (e) => {
+            if (e.target.id === 'modal') app.closeModal();
+        });
+
+        // Initialize
+        app.init();
+    </script>
+</body>
+</html>
